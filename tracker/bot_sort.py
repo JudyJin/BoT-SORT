@@ -4,6 +4,7 @@ import numpy as np
 from collections import deque
 
 from tracker import matching
+import pickle
 from tracker.gmc import GMC
 from tracker.basetrack import BaseTrack, TrackState
 from tracker.kalman_filter import KalmanFilter
@@ -29,7 +30,7 @@ class STrack(BaseTrack):
         self.curr_feat = None
         if feat is not None:
             self.update_features(feat)
-        self.features = deque([], maxlen=feat_history)
+        self.features = deque([])#, maxlen=feat_history
         self.alpha = 0.9
 
     def update_features(self, feat):
@@ -232,7 +233,7 @@ class BoTSORT(object):
         activated_starcks = []
         refind_stracks = []
         lost_stracks = []
-        removed_stracks = []
+        # removed_stracks = []
 
         if len(output_results):
             if output_results.shape[1] == 5:
@@ -273,6 +274,17 @@ class BoTSORT(object):
             if self.args.with_reid:
                 detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, f) for
                               (tlbr, s, f) in zip(dets, scores_keep, features_keep)]
+                
+                with open('/home/zhaojin/datasets/saved_detection/..frame_curr.pkl'.replace('..', str(self.frame_id)), 'wb') as f:
+                    pickle.dump(detections[0].curr_feat, f)
+                with open('/home/zhaojin/datasets/saved_detection/..frame_feature.pkl'.replace('..', str(self.frame_id)), 'wb') as f:
+                    pickle.dump(detections[0].smooth_feat, f)
+                # if self.frame_id ==50:
+                #     print(1, detections)
+
+                # if self.frame_id >=320:
+                #     print(1,detections)
+                #     print(detections[0].curr_feat)
             else:
                 detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s) for
                               (tlbr, s) in zip(dets, scores_keep)]
@@ -308,11 +320,24 @@ class BoTSORT(object):
 
         if self.args.with_reid:
             emb_dists = matching.embedding_distance(strack_pool, detections) / 2.0
+            # if self.frame_id <=60 or self.frame_id >= 315:
+            #     print(self.frame_id)
+            #     print(ious_dists)
+            #     print(ious_dists_mask)
+            #     print(emb_dists)
+            
             raw_emb_dists = emb_dists.copy()
             emb_dists[emb_dists > self.appearance_thresh] = 1.0
-            emb_dists[ious_dists_mask] = 1.0
+            # emb_dists[ious_dists_mask] = 1.0
             dists = np.minimum(ious_dists, emb_dists)
-
+            # if self.frame_id <=60 or self.frame_id >= 315:
+            #     print(self.frame_id)
+            #     print(emb_dists)
+            #     print(ious_dists)
+            #     print(dists)
+            # if self.frame_id >350:
+            #     foo
+            
             # Popular ReID method (JDE / FairMOT)
             # raw_emb_dists = matching.embedding_distance(strack_pool, detections)
             # dists = matching.fuse_motion(self.kalman_filter, raw_emb_dists, strack_pool, detections)
@@ -354,6 +379,10 @@ class BoTSORT(object):
             '''Detections'''
             detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s) for
                                  (tlbr, s) in zip(dets_second, scores_second)]
+            # if self.frame_id >=320:
+            #     print(2,detections_second)
+            #     foo
+            
         else:
             detections_second = []
 
@@ -399,7 +428,7 @@ class BoTSORT(object):
         for it in u_unconfirmed:
             track = unconfirmed[it]
             track.mark_removed()
-            removed_stracks.append(track)
+            # removed_stracks.append(track)
 
         """ Step 4: Init new stracks"""
         for inew in u_detection:
@@ -411,10 +440,10 @@ class BoTSORT(object):
             activated_starcks.append(track)
 
         """ Step 5: Update state"""
-        for track in self.lost_stracks:
-            if self.frame_id - track.end_frame > self.max_time_lost:
-                track.mark_removed()
-                removed_stracks.append(track)
+        # for track in self.lost_stracks:
+        #     if self.frame_id - track.end_frame > self.max_time_lost:
+        #         track.mark_removed()
+                # removed_stracks.append(track)
 
         """ Merge """
         self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
@@ -423,7 +452,7 @@ class BoTSORT(object):
         self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
         self.lost_stracks.extend(lost_stracks)
         self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
-        self.removed_stracks.extend(removed_stracks)
+        # self.removed_stracks.extend(removed_stracks)
         self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
 
         # output_stracks = [track for track in self.tracked_stracks if track.is_activated]

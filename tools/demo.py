@@ -35,7 +35,7 @@ def make_parser():
     parser.add_argument("--conf", default=None, type=float, help="test conf")
     parser.add_argument("--nms", default=None, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=None, type=int, help="test img size")
-    parser.add_argument("--fps", default=30, type=int, help="frame rate (fps)")
+    parser.add_argument("--fps", default=5, type=int, help="frame rate (fps)")
     parser.add_argument("--fp16", dest="fp16", default=False, action="store_true",help="Adopting mix precision evaluating.")
     parser.add_argument("--fuse", dest="fuse", default=False, action="store_true", help="Fuse conv and bn for testing.")
     parser.add_argument("--trt", dest="trt", default=False, action="store_true", help="Using TensorRT model for testing.")
