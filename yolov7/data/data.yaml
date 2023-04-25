@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 8
+names: ['1', '11', '2', '22', '3', '33', '4', '44']
+
+roboflow:
+  workspace: deep-learning-computer-vision-model
+  project: yolo_botsort
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/deep-learning-computer-vision-model/yolo_botsort/dataset/1
