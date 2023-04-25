@@ -1,0 +1,11 @@
+_BASE_: ../Base-SBS.yml
+
+MODEL:
+  BACKBONE:
+    NAME: build_resnest_backbone
+
+DATASETS:
+  NAMES: ("REID",)
+  TESTS: ("REID",)
+
+OUTPUT_DIR: logs/REID/sbs_S50

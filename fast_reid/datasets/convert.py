@@ -49,8 +49,10 @@ def sanity_check(annot):
 for dir in os.listdir(annotation_path):
     if os.path.isdir(os.path.join(annotation_path, dir)):
         print('video name: ', dir)
-        os.makedirs(os.path.join(output_path, 'images', dir), exist_ok=True)
-        os.makedirs(os.path.join(output_path, 'annotations', dir), exist_ok=True)
+        # os.makedirs(os.path.join(output_path, 'images', dir), exist_ok=True)
+        # os.makedirs(os.path.join(output_path, 'annotations', dir), exist_ok=True)
+        os.makedirs(os.path.join(output_path, dir, 'images'), exist_ok=True)
+        os.makedirs(os.path.join(output_path, dir, 'gt'), exist_ok=True)
         annos = []
         for file in os.listdir(os.path.join(annotation_path, dir)):
             if file.endswith('.json'):
@@ -60,10 +62,9 @@ for dir in os.listdir(annotation_path):
                 # if not sanity_check_passed:
                 #     print('sanity check failed for frame {}: {}'.format(dir+'/'+frame_name, sanity_message))
                 #     continue
-
-                shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, 'images', dir, frame_name))
+                int_frame_name = str(int(frame_name[-7:-4]))
+                shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', int_frame_name.zfill(7)+'.jpg'))
                 # print('frame name: ', frame_name)
-                frame_name = str(int(frame_name[-7:-4]))
                 # print('frame name: ', frame_name)
                 # print('keys: ', anno.keys()) # dict_keys(['version', 'flags', 'shapes', 'imagePath', 'imageData', 'imageHeight', 'imageWidth'])
                 # anno_dicts = {
@@ -87,15 +88,11 @@ for dir in os.listdir(annotation_path):
                             # if x_min < x_max and y_min < y_max:
                             #     anno_dicts[(class_id//11)-1]['bbox'] = [int(x_min), int(y_min), int(x_max), int(y_max)]
                             if x_min > x_max:
-                                temp = x_min
-                                x_min = x_max
-                                x_max = temp
+                                x_min, x_max = x_max, x_min
                             if y_min > y_max:
-                                temp = y_min
-                                y_min = y_max
-                                y_max = temp
+                                y_min, y_max = y_max, y_min
                             # anno_dicts[frame_name] = {'frame_name': frame_name, 'id': (class_id//11)-1, 'bbox': [int(x_min), int(y_min), int(x_max), int(y_max)]}
-                            results = [frame_name, (class_id//11)-1, int(x_min), int(y_min), int(x_max), int(y_max), -1, -1, -1]
+                            results = [int_frame_name, (class_id//11)-1, int(x_min), int(y_min), int(x_max), int(y_max), -1, -1, -1]
                             results = [str(item) for item in results]
                             annos.append(','.join(results))
                             assert(x_min < x_max), 'x_min: {}, x_max: {}'.format(x_min, x_max)
@@ -104,7 +101,8 @@ for dir in os.listdir(annotation_path):
                             # print('x_min: ', x_min, 'y_min: ', y_min, 'x_max: ', x_max, 'y_max: ', y_max)
                     else:
                         pass
-        with open(os.path.join(output_path, 'annotations', dir, 'gt.txt'), 'w') as f:
+        # with open(os.path.join(output_path, 'annotations', dir, 'gt.txt'), 'w') as f:
+        with open(os.path.join(output_path, dir, 'gt', 'gt.txt'), 'w') as f:
             for item in annos:
                 f.write(item + '\n')      
 

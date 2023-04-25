@@ -20,10 +20,10 @@ def generate_trajectories(file_path, groundTrues):
 
     values = np.array(values, np.float_)
 
-    if groundTrues:
+    # if groundTrues:
         # values = values[values[:, 6] == 1, :]  # Remove ignore objects
         # values = values[values[:, 7] == 1, :]  # Pedestrian only
-        values = values[values[:, 8] > 0.4, :]  # visibility only
+        # values = values[values[:, 8] > 0.4, :]  # visibility only
 
     values = np.array(values)
     values[:, 4] += values[:, 2]
@@ -35,7 +35,7 @@ def generate_trajectories(file_path, groundTrues):
 def make_parser():
     parser = argparse.ArgumentParser("MOTChallenge ReID dataset")
 
-    parser.add_argument("--data_path", default="", help="path to MOT data")
+    parser.add_argument("--data_path", default="/home/zhaojin/datasets", help="path to MOT data")
     parser.add_argument("--save_path", default="fast_reid/datasets", help="Path to save the MOT-ReID dataset")
     parser.add_argument("--mot", default=17, help="MOTChallenge dataset number e.g. 17, 20")
 
@@ -46,6 +46,7 @@ def main(args):
 
     # Create folder for outputs
     save_path = os.path.join(args.save_path, 'MOT' + str(args.mot) + '-ReID')
+
     os.makedirs(save_path, exist_ok=True)
 
     save_path = os.path.join(args.save_path, 'MOT' + str(args.mot) + '-ReID')
@@ -55,7 +56,8 @@ def main(args):
     os.makedirs(test_save_path, exist_ok=True)
 
     # Get gt data
-    data_path = os.path.join(args.data_path, 'MOT' + str(args.mot), 'train')
+    # data_path = os.path.join(args.data_path, 'MOT' + str(args.mot), 'train')
+    data_path = os.path.join(args.data_path, 'REID_DATA', 'dataset', 'train')
 
     if args.mot == '17':
         seqs = [f for f in os.listdir(data_path) if 'FRCNN' in f]
@@ -73,15 +75,21 @@ def main(args):
         ground_truth_path = os.path.join(data_path, seq, 'gt/gt.txt')
         gt = generate_trajectories(ground_truth_path, groundTrues=True)  # f, id, x_tl, y_tl, x_br, y_br, ...
 
-        images_path = os.path.join(data_path, seq, 'img1')
+        images_path = os.path.join(data_path, seq, 'images')
         img_files = os.listdir(images_path)
         img_files.sort()
 
         num_frames = len(img_files)
         max_id_per_seq = 0
-        for f in range(num_frames):
+        # print(img_files)
+        # foo
+        for i, f in enumerate(img_files):
+            f = int(f.split('.')[0])
 
-            img = cv2.imread(os.path.join(images_path, img_files[f]))
+            img = cv2.imread(os.path.join(images_path, img_files[i]))
+            # cv2.iwrite("try.jpg", img)
+            # foo
+            
 
             if img is None:
                 print("ERROR: Receive empty frame")
@@ -89,7 +97,7 @@ def main(args):
 
             H, W, _ = np.shape(img)
 
-            det = gt[f + 1 == gt[:, 0], 1:].astype(np.int_)
+            det = gt[f == gt[:, 0], 1:].astype(np.int_)
 
             for d in range(np.size(det, 0)):
                 id_ = det[d, 0]
@@ -105,6 +113,8 @@ def main(args):
 
                 # patch = cv2.cvtColor(img[y1:y2, x1:x2, :], cv2.COLOR_BGR2RGB)
                 patch = img[y1:y2, x1:x2, :]
+                # patch = img[x1:x2,y1:y2, :]
+
 
                 max_id_per_seq = max(max_id_per_seq, id_)
 
@@ -112,14 +122,14 @@ def main(args):
                 # plt.imshow(patch)
                 # plt.show()
 
-                fileName = (str(id_ + id_offset)).zfill(7) + '_' + seq + '_' + (str(f)).zfill(7) + '_acc_data.bmp'
-
+                fileName = (str(id_)).zfill(7) + '_' + seq + '_' + (str(f)).zfill(7) + '_acc_data.bmp'
+                #  + id_offset
                 if f < num_frames // 2:
                     cv2.imwrite(os.path.join(train_save_path, fileName), patch)
                 else:
                     cv2.imwrite(os.path.join(test_save_path, fileName), patch)
 
-        id_offset += max_id_per_seq
+        # id_offset += max_id_per_seq
 
 
 if __name__ == "__main__":
