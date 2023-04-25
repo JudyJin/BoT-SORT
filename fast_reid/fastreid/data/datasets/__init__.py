@@ -36,6 +36,7 @@ from .lpw import LPW
 from .shinpuhkan import Shinpuhkan
 from .wildtracker import WildTrackCrop
 from .cuhk_sysu import cuhkSYSU
+from .REID import REID
 
 
 # Vehicle re-id datasets
