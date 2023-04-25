@@ -245,6 +245,8 @@ class BoTSORT(object):
                 bboxes = output_results[:, :4]  # x1y1x2y2
                 classes = output_results[:, -1]
 
+
+
             # Remove bad detections
             lowest_inds = scores > self.track_low_thresh
             bboxes = bboxes[lowest_inds]
@@ -256,6 +258,14 @@ class BoTSORT(object):
             dets = bboxes[remain_inds]
             scores_keep = scores[remain_inds]
             classes_keep = classes[remain_inds]
+
+            # print('remain_inds', remain_inds)
+            # print('dets', dets)
+            # print('scores_keep', scores_keep)
+            # print('classes_keep', classes_keep)
+            
+            # if self.frame_id > 200:
+            #     foo
 
         else:
             bboxes = []
@@ -458,6 +468,10 @@ class BoTSORT(object):
         # output_stracks = [track for track in self.tracked_stracks if track.is_activated]
         output_stracks = [track for track in self.tracked_stracks]
 
+        print(output_stracks)
+        print(output_stracks[0].track_id)
+        print(output_stracks[0].tlwh)
+        foo
 
         return output_stracks
 

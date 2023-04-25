@@ -242,6 +242,8 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
         if ret_val:
             # Detect objects
             outputs, img_info = predictor.inference(frame, timer)
+            # print(outputs)
+            # print(img_info)
             scale = min(exp.test_size[0] / float(img_info['height'], ), exp.test_size[1] / float(img_info['width']))
 
             if outputs[0] is not None:
