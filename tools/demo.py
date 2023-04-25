@@ -314,11 +314,11 @@ def main(exp, args):
     if args.tsize is not None:
         exp.test_size = (args.tsize, args.tsize)
 
-    # model = exp.get_model().to(args.device)
+    model = exp.get_model().to(args.device)
     
-    rf = Roboflow(api_key="KNgvDxqsjJ3COfFnPrYo")
-    project = rf.workspace().project("yolo_fine")
-    model = project.version(1).model
+    # rf = Roboflow(api_key="KNgvDxqsjJ3COfFnPrYo")
+    # project = rf.workspace().project("yolo_fine")
+    # model = project.version(1).model
     logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
     model.eval()
 
