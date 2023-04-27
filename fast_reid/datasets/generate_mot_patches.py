@@ -26,8 +26,8 @@ def generate_trajectories(file_path, groundTrues):
         # values = values[values[:, 8] > 0.4, :]  # visibility only
 
     values = np.array(values)
-    # values[:, 4] += values[:, 2]
-    # values[:, 5] += values[:, 3]
+    values[:, 4] += values[:, 2]
+    values[:, 5] += values[:, 3]
 
     return values
 

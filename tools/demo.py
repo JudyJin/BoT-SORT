@@ -5,6 +5,7 @@ import os.path as osp
 import time
 import cv2
 import torch
+import pandas as pd
 
 from loguru import logger
 
@@ -56,10 +57,14 @@ def make_parser():
 
     # ReID
     parser.add_argument("--with-reid", dest="with_reid", default=False, action="store_true", help="test mot20.")
-    parser.add_argument("--fast-reid-config", dest="fast_reid_config", default=r"fast_reid/configs/MOT17/sbs_S50.yml", type=str, help="reid config file path")
-    parser.add_argument("--fast-reid-weights", dest="fast_reid_weights", default=r"pretrained/mot17_sbs_S50.pth", type=str,help="reid config file path")
+    parser.add_argument("--fast-reid-config", dest="fast_reid_config", default=r"fast_reid/configs/REID/sbs_S50.yml", type=str, help="reid config file path")
+    parser.add_argument("--fast-reid-weights", dest="fast_reid_weights", default=r"pretrained/reid_sbs_S50.pth", type=str,help="reid config file path")
     parser.add_argument('--proximity_thresh', type=float, default=0.5, help='threshold for rejecting low overlap reid matches')
     parser.add_argument('--appearance_thresh', type=float, default=0.25, help='threshold for rejecting low appearance similarity reid matches')
+    
+    # test
+    parser.add_argument('--head_bbox_path', default='/home/zhaojin/datasets/test/test_head_bbox.txt', type=str, help='head bbox path')
+    parser.add_argument('--test_attention', default=False, help='test attention')
     return parser
 
 
@@ -198,7 +203,8 @@ def image_demo(predictor, vis_folder, current_time, args):
         # result_image = predictor.visual(outputs[0], img_info, predictor.confthre)
         if args.save_result:
             timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
-            save_folder = osp.join(vis_folder, timestamp)
+            # save_folder = osp.join(vis_folder, timestamp)
+            save_folder = osp.join(vis_folder, args.path.split('/')[-1])
             os.makedirs(save_folder, exist_ok=True)
             cv2.imwrite(osp.join(save_folder, osp.basename(img_path)), online_im)
 
@@ -210,19 +216,24 @@ def image_demo(predictor, vis_folder, current_time, args):
             break
 
     if args.save_result:
-        res_file = osp.join(vis_folder, f"{timestamp}.txt")
+        # res_file = osp.join(vis_folder, f"{timestamp}.txt")
+        res_file = osp.join(vis_folder, f"{args.path.split('/')[-1]}.txt")
         with open(res_file, 'w') as f:
             f.writelines(results)
         logger.info(f"save results to {res_file}")
 
 
 def imageflow_demo(predictor, vis_folder, current_time, args):
+    head_bbox = None
+    if args.test_attention:
+        head_bbox = pd.read_csv(args.head_bbox_path)
     cap = cv2.VideoCapture(args.path if args.demo == "video" else args.camid)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
     fps = cap.get(cv2.CAP_PROP_FPS)
     timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
-    save_folder = osp.join(vis_folder, timestamp)
+    # save_folder = osp.join(vis_folder, timestamp)
+    save_folder = osp.join(vis_folder, args.path.split("/")[-1].split(".")[0])
     os.makedirs(save_folder, exist_ok=True)
     if args.demo == "video":
         save_path = osp.join(save_folder, args.path.split("/")[-1])
@@ -236,10 +247,12 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     timer = Timer()
     frame_id = 0
     results = []
+    results_head = []
     while True:
         if frame_id % 20 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
         ret_val, frame = cap.read()
+        # cv2.imwrite("/home/zhaojin/datasets/final_test_frame/"+(str(frame_id)).zfill(4)+".jpg", frame) 
         if ret_val:
             # Detect objects
             outputs, img_info = predictor.inference(frame, timer)
@@ -253,7 +266,12 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
                 detections[:, :4] /= scale
 
                 # Run tracker
-                online_targets = tracker.update(detections, img_info["raw_img"])
+                if args.test_attention:
+                    frame_head_bbox = head_bbox[head_bbox['image_path'] == frame_id]
+                    frame_head_bbox = frame_head_bbox.values.tolist()
+                    online_targets, online_head = tracker.update(detections, img_info["raw_img"], head_bbox = frame_head_bbox)
+                else:
+                    online_targets = tracker.update(detections, img_info["raw_img"])
 
                 online_tlwhs = []
                 online_ids = []
@@ -270,9 +288,16 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
                             f"{frame_id},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                         )
                 timer.toc()
-                online_im = plot_tracking(
-                    img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id + 1, fps=1. / timer.average_time
-                )
+
+                if args.test_attention:
+                    for t in online_head:
+                        results_head.append(
+                            f"{frame_id},{t[0]},{t[1]:.2f},{t[2]:.2f},{t[3]:.2f},{t[4]:.2f},-1,-1,-1,-1\n"
+                        )
+                    timer.toc()
+                    online_im = plot_tracking(
+                        img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id + 1, fps=1. / timer.average_time
+                    )
             else:
                 timer.toc()
                 online_im = img_info['raw_img']
@@ -286,10 +311,17 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
         frame_id += 1
 
     if args.save_result:
-        res_file = osp.join(vis_folder, f"{timestamp}.txt")
+        # res_file = osp.join(vis_folder, f"{timestamp}.txt")
+        res_file = osp.join(vis_folder, f"{args.path.split('/')[-1].split('.')[0]}.txt")
         with open(res_file, 'w') as f:
             f.writelines(results)
         logger.info(f"save results to {res_file}")
+        
+        if args.test_attention:
+            res_file = osp.join(vis_folder, f"{args.path.split('/')[-1].split('.')[0]}head.txt")
+            with open(res_file, 'w') as f:
+                f.writelines(results_head)
+        
 
 
 def main(exp, args):
@@ -323,6 +355,8 @@ def main(exp, args):
     # model = project.version(1).model
     logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
     model.eval()
+
+
 
     if not args.trt:
         if args.ckpt is None:

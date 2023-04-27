@@ -53,8 +53,17 @@ for dir in os.listdir(annotation_path):
         # os.makedirs(os.path.join(output_path, 'annotations', dir), exist_ok=True)
         os.makedirs(os.path.join(output_path, dir, 'images'), exist_ok=True)
         os.makedirs(os.path.join(output_path, dir, 'gt'), exist_ok=True)
+        os.makedirs(os.path.join(output_path, dir, 'dev'), exist_ok=True)
+        '[Sequence]
+        name=MOT17-02-DPM
+        imDir=img1
+        frameRate=30
+        seqLength=600
+        imWidth=1920
+        imHeight=1080
+        imExt=.jpg'
         annos = []
-        for file in os.listdir(os.path.join(annotation_path, dir)):
+        for file in sorted(os.listdir(os.path.join(annotation_path, dir))):
             if file.endswith('.json'):
                 anno = json.load(open(os.path.join(annotation_path, dir, file)))
                 frame_name = file.split('.')[0] + '.jpg'
@@ -63,7 +72,15 @@ for dir in os.listdir(annotation_path):
                 #     print('sanity check failed for frame {}: {}'.format(dir+'/'+frame_name, sanity_message))
                 #     continue
                 int_frame_name = str(int(frame_name[-7:-4]))
-                shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', int_frame_name.zfill(7)+'.jpg'))
+                has_body = False
+                for item in anno['shapes']:
+                    # print('item: ', item['label'], item['points'], item['shape_type'])
+                    class_id = int(item['label'])
+                    if class_id in [11, 22, 33, 44]:
+                        has_body = True
+                        break
+                if has_body:
+                    shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', int_frame_name.zfill(7)+'.jpg'))
                 # print('frame name: ', frame_name)
                 # print('frame name: ', frame_name)
                 # print('keys: ', anno.keys()) # dict_keys(['version', 'flags', 'shapes', 'imagePath', 'imageData', 'imageHeight', 'imageWidth'])
@@ -92,7 +109,7 @@ for dir in os.listdir(annotation_path):
                             if y_min > y_max:
                                 y_min, y_max = y_max, y_min
                             # anno_dicts[frame_name] = {'frame_name': frame_name, 'id': (class_id//11)-1, 'bbox': [int(x_min), int(y_min), int(x_max), int(y_max)]}
-                            results = [int_frame_name, (class_id//11)-1, int(x_min), int(y_min), int(x_max), int(y_max), -1, -1, -1]
+                            results = [int_frame_name, (class_id//11)-1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), -1, -1, -1]
                             results = [str(item) for item in results]
                             annos.append(','.join(results))
                             assert(x_min < x_max), 'x_min: {}, x_max: {}'.format(x_min, x_max)
