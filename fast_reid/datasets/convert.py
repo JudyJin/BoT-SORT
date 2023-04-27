@@ -6,7 +6,7 @@ from collections import defaultdict
 
 frame_path = '/home/zhaojin/datasets/REID_DATA/frames'
 annotation_path = '/home/zhaojin/datasets/REID_DATA/annotations'
-output_path = '/home/zhaojin/datasets/REID_DATA/dataset'
+output_path = '/home/zhaojin/datasets/REID_DATA/dataset_frame_sort'
 def sanity_check(annot):
     result = True
     message = ''
@@ -54,15 +54,9 @@ for dir in os.listdir(annotation_path):
         os.makedirs(os.path.join(output_path, dir, 'images'), exist_ok=True)
         os.makedirs(os.path.join(output_path, dir, 'gt'), exist_ok=True)
         os.makedirs(os.path.join(output_path, dir, 'dev'), exist_ok=True)
-        '[Sequence]
-        name=MOT17-02-DPM
-        imDir=img1
-        frameRate=30
-        seqLength=600
-        imWidth=1920
-        imHeight=1080
-        imExt=.jpg'
         annos = []
+        devs = []
+        processed_frame_name = 1
         for file in sorted(os.listdir(os.path.join(annotation_path, dir))):
             if file.endswith('.json'):
                 anno = json.load(open(os.path.join(annotation_path, dir, file)))
@@ -73,14 +67,14 @@ for dir in os.listdir(annotation_path):
                 #     continue
                 int_frame_name = str(int(frame_name[-7:-4]))
                 has_body = False
+                H = anno["imageHeight"]
+                W = anno["imageWidth"]
                 for item in anno['shapes']:
                     # print('item: ', item['label'], item['points'], item['shape_type'])
                     class_id = int(item['label'])
                     if class_id in [11, 22, 33, 44]:
                         has_body = True
                         break
-                if has_body:
-                    shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', int_frame_name.zfill(7)+'.jpg'))
                 # print('frame name: ', frame_name)
                 # print('frame name: ', frame_name)
                 # print('keys: ', anno.keys()) # dict_keys(['version', 'flags', 'shapes', 'imagePath', 'imageData', 'imageHeight', 'imageWidth'])
@@ -109,19 +103,39 @@ for dir in os.listdir(annotation_path):
                             if y_min > y_max:
                                 y_min, y_max = y_max, y_min
                             # anno_dicts[frame_name] = {'frame_name': frame_name, 'id': (class_id//11)-1, 'bbox': [int(x_min), int(y_min), int(x_max), int(y_max)]}
-                            results = [int_frame_name, (class_id//11)-1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), -1, -1, -1]
+                            results = [processed_frame_name, (class_id//11)-1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), 1, -1, -1, -1]
                             results = [str(item) for item in results]
                             annos.append(','.join(results))
+                            dev = [processed_frame_name, -1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), 1, -1, -1, -1]
+                            dev = [str(item) for item in dev]
+                            devs.append(','.join(dev))
                             assert(x_min < x_max), 'x_min: {}, x_max: {}'.format(x_min, x_max)
                             assert(y_min < y_max), 'y_min: {}, y_max: {}'.format(y_min, y_max)
                             # print('x_min: {}, x_max: {}, y_min: {}, y_max: {}'.format(x_min, x_max, y_min, y_max))
                             # print('x_min: ', x_min, 'y_min: ', y_min, 'x_max: ', x_max, 'y_max: ', y_max)
                     else:
                         pass
+                if has_body:
+                    shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', (str(processed_frame_name)).zfill(7)+'.jpg'))
+                    processed_frame_name += 1
         # with open(os.path.join(output_path, 'annotations', dir, 'gt.txt'), 'w') as f:
         with open(os.path.join(output_path, dir, 'gt', 'gt.txt'), 'w') as f:
             for item in annos:
-                f.write(item + '\n')      
+                f.write(item + '\n')   
+        with open(os.path.join(output_path, dir, 'dev', 'dev.txt'), 'w') as f:
+            for item in devs:
+                f.write(item + '\n')  
+
+        #write seq file
+        with open(os.path.join(output_path, dir, 'seqinfo.ini'), 'w') as f:
+            f.write('[Sequence]\n')
+            f.write('name={}\n'.format(dir))
+            f.write('imDir=images\n')
+            f.write('frameRate=5\n')
+            f.write('seqLength={}\n'.format(processed_frame_name-1))
+            f.write('imWidth={}\n'.format(W))
+            f.write('imHeight={}\n'.format(H))
+            f.write('imExt=.jpg\n')
 
         # break          
             
