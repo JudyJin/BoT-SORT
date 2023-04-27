@@ -232,8 +232,8 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
     fps = cap.get(cv2.CAP_PROP_FPS)
     timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
-    # save_folder = osp.join(vis_folder, timestamp)
-    save_folder = osp.join(vis_folder, args.path.split("/")[-1].split(".")[0])
+    file_name = timestamp + "-" + args.path.split("/")[-1].split(".")[0]
+    save_folder = osp.join(vis_folder, file_name)
     os.makedirs(save_folder, exist_ok=True)
     if args.demo == "video":
         save_path = osp.join(save_folder, args.path.split("/")[-1])
@@ -291,13 +291,15 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
 
                 if args.test_attention:
                     for t in online_head:
+                        online_tlwhs.append(t[1:])
+                        online_ids.append(t[0])
                         results_head.append(
                             f"{frame_id},{t[0]},{t[1]:.2f},{t[2]:.2f},{t[3]:.2f},{t[4]:.2f},-1,-1,-1,-1\n"
                         )
                     timer.toc()
-                    online_im = plot_tracking(
-                        img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id + 1, fps=1. / timer.average_time
-                    )
+                online_im = plot_tracking(
+                    img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id + 1, fps=1. / timer.average_time
+                )
             else:
                 timer.toc()
                 online_im = img_info['raw_img']
@@ -312,13 +314,13 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
 
     if args.save_result:
         # res_file = osp.join(vis_folder, f"{timestamp}.txt")
-        res_file = osp.join(vis_folder, f"{args.path.split('/')[-1].split('.')[0]}.txt")
+        res_file = osp.join(vis_folder, f"{file_name}.txt")
         with open(res_file, 'w') as f:
             f.writelines(results)
         logger.info(f"save results to {res_file}")
         
         if args.test_attention:
-            res_file = osp.join(vis_folder, f"{args.path.split('/')[-1].split('.')[0]}head.txt")
+            res_file = osp.join(vis_folder, f"{file_name}_head.txt")
             with open(res_file, 'w') as f:
                 f.writelines(results_head)
         

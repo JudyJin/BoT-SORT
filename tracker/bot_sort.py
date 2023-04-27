@@ -228,7 +228,7 @@ class BoTSORT(object):
 
         self.gmc = GMC(method=args.cmc_method, verbose=[args.name, args.ablation])
 
-    def update(self, output_results, img):
+    def update(self, output_results, img, head_bbox=None):
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
@@ -329,24 +329,37 @@ class BoTSORT(object):
             ious_dists = matching.fuse_score(ious_dists, detections)
 
         if self.args.with_reid:
-            emb_dists = matching.embedding_distance(strack_pool, detections) / 2.0
-            # if self.frame_id <=60 or self.frame_id >= 315:
-            #     print(self.frame_id)
-            #     print(ious_dists)
-            #     print(ious_dists_mask)
-            #     print(emb_dists)
-            
+            emb_dists = matching.embedding_distance(strack_pool, detections) / 2.0   
             raw_emb_dists = emb_dists.copy()
-            emb_dists[emb_dists > self.appearance_thresh] = 1.0
-            # emb_dists[ious_dists_mask] = 1.0
-            dists = np.minimum(ious_dists, emb_dists)
-            # if self.frame_id <=60 or self.frame_id >= 315:
+
+            # boundary_mask = np.zeros_like(ious_dists_mask)
+            # for i, d in enumerate(detections):
+            #     if d.tlbr[0] < 0 or d.tlbr[1] < 0 or d.tlbr[2] > img.shape[1]:# or d.tlbr[3] > img.shape[0]:
+            #         boundary_mask[:, i] = 1
+
+            # ious_dists_mask = ious_dists_mask * boundary_mask
+            # if self.frame_id > 91:
             #     print(self.frame_id)
             #     print(emb_dists)
+            # emb_dists[emb_dists > self.appearance_thresh] = 1.0
+            # if self.frame_id > 91:
+            #     print(emb_dists)
             #     print(ious_dists)
+            
+            # ious_dists_raw = ious_dists.copy()
+            # emb_dists[ious_dists_mask] = 1.0
+            # ious_dists[boundary_mask] = 1.0
+            # if self.frame_id > 150:
+            #     print(self.frame_id)
+            #     for d in detections:
+            #         print(d.tlbr)
+            #     print(boundary_mask)
+            #     print(ious_dists_raw)
+            #     print(ious_dists)
+            #     print(emb_dists)
+            dists = np.minimum(ious_dists, emb_dists)
+            # if self.frame_id > 91:
             #     print(dists)
-            # if self.frame_id >350:
-            #     foo
             
             # Popular ReID method (JDE / FairMOT)
             # raw_emb_dists = matching.embedding_distance(strack_pool, detections)
@@ -423,10 +436,14 @@ class BoTSORT(object):
             ious_dists = matching.fuse_score(ious_dists, detections)
 
         if self.args.with_reid:
+            # boundary_mask = np.zeros_like(ious_dists_mask)
+            # for i, d in enumerate(detections):
+            #     if d.tlbr[0] < 0 or d.tlbr[1] < 0 or d.tlbr[2] > img.shape[1]:# or d.tlbr[3] > img.shape[0]:
+            #         boundary_mask[:, i] = 1
             emb_dists = matching.embedding_distance(unconfirmed, detections) / 2.0
             raw_emb_dists = emb_dists.copy()
             emb_dists[emb_dists > self.appearance_thresh] = 1.0
-            emb_dists[ious_dists_mask] = 1.0
+            # emb_dists[ious_dists_mask] = 1.0
             dists = np.minimum(ious_dists, emb_dists)
         else:
             dists = ious_dists
@@ -468,10 +485,24 @@ class BoTSORT(object):
         # output_stracks = [track for track in self.tracked_stracks if track.is_activated]
         output_stracks = [track for track in self.tracked_stracks]
 
-        print(output_stracks)
-        print(output_stracks[0].track_id)
-        print(output_stracks[0].tlwh)
-        foo
+        # print(output_stracks)
+        # print(output_stracks[0].track_id)
+        # print(output_stracks[0].tlwh)
+        if head_bbox is not None:
+            head_id = []
+            for i in head_bbox:
+                x_min = i[1]
+                y_min = i[2]
+                x_max = i[1]+i[3]
+                y_max = i[2]+i[4]
+                for j in output_stracks:
+                    intersection_width = min(j.tlwh[2]+j.tlwh[0], x_max) - max(j.tlwh[0], x_min)
+                    intersection_height = min(j.tlwh[3]+j.tlwh[1], y_max) - max(j.tlwh[1], y_min)
+                    if intersection_width > 0.9*(x_max - x_min) and intersection_height > 0.9*(y_max - y_min):
+                        head_id.append([j.track_id, x_min, y_min, x_max-x_min, y_max-y_min])
+                        break
+
+            return output_stracks, head_id
 
         return output_stracks
 
