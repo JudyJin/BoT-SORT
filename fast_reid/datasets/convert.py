@@ -6,7 +6,7 @@ from collections import defaultdict
 
 frame_path = '/home/zhaojin/datasets/REID_DATA/frames'
 annotation_path = '/home/zhaojin/datasets/REID_DATA/annotations'
-output_path = '/home/zhaojin/datasets/REID_DATA/dataset_frame_sort'
+output_path = '/home/zhaojin/datasets/REID_DATA/dataset_all_images'
 def sanity_check(annot):
     result = True
     message = ''
@@ -57,6 +57,12 @@ for dir in os.listdir(annotation_path):
         annos = []
         devs = []
         processed_frame_name = 1
+        for frame_name in sorted(os.listdir(os.path.join(frame_path, dir))):
+            if frame_name.endswith('.jpg'):
+                int_frame_name = str(int(frame_name[-7:-4]))
+                shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', (str(int_frame_name)).zfill(7)+'.jpg'))
+                processed_frame_name += 1
+
         for file in sorted(os.listdir(os.path.join(annotation_path, dir))):
             if file.endswith('.json'):
                 anno = json.load(open(os.path.join(annotation_path, dir, file)))
@@ -103,10 +109,10 @@ for dir in os.listdir(annotation_path):
                             if y_min > y_max:
                                 y_min, y_max = y_max, y_min
                             # anno_dicts[frame_name] = {'frame_name': frame_name, 'id': (class_id//11)-1, 'bbox': [int(x_min), int(y_min), int(x_max), int(y_max)]}
-                            results = [processed_frame_name, (class_id//11)-1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), 1, -1, -1, -1]
+                            results = [int_frame_name, (class_id//11)-1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), 1, -1, -1, -1]
                             results = [str(item) for item in results]
                             annos.append(','.join(results))
-                            dev = [processed_frame_name, -1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), 1, -1, -1, -1]
+                            dev = [int_frame_name, -1, float(x_min), float(y_min), float(x_max)-float(x_min), float(y_max)-float(y_min), 1, -1, -1, -1]
                             dev = [str(item) for item in dev]
                             devs.append(','.join(dev))
                             assert(x_min < x_max), 'x_min: {}, x_max: {}'.format(x_min, x_max)
@@ -115,9 +121,10 @@ for dir in os.listdir(annotation_path):
                             # print('x_min: ', x_min, 'y_min: ', y_min, 'x_max: ', x_max, 'y_max: ', y_max)
                     else:
                         pass
-                if has_body:
-                    shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', (str(processed_frame_name)).zfill(7)+'.jpg'))
-                    processed_frame_name += 1
+                # if has_body:
+                # shutil.copy(os.path.join(frame_path, dir, frame_name), os.path.join(output_path, dir, 'images', (str(int_frame_name)).zfill(7)+'.jpg'))
+
+                
         # with open(os.path.join(output_path, 'annotations', dir, 'gt.txt'), 'w') as f:
         with open(os.path.join(output_path, dir, 'gt', 'gt.txt'), 'w') as f:
             for item in annos:
