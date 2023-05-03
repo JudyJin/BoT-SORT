@@ -6,6 +6,8 @@
 - Improve the tracking algorithm, changes made in  `BoT-SORT/tracker/bot-sort.py`, `BoT-SORT/tools/demo.py` and etc.
 - Improve the Re-ID feature embeddings by finetuning on new Re-ID dataset, changes made in `BoT-SORT/fast_reid/configs/REID`, `BoT-SORT/fast_reid/datasets` and etc.
 
+> Interesting Demo results are in [drive](https://drive.google.com/drive/folders/1HtWcHifGN0EzNLz_vDgmSFvnXR1qHwsY).
+
 
 Below are oringal BoT-SORT README
 # BoT-SORT
