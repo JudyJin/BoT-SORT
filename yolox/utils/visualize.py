@@ -49,7 +49,7 @@ def get_color(idx):
     return color
 
 
-def plot_tracking(image, tlwhs, obj_ids, gazes, ids, scores=None, frame_id=0, fps=0., ids2=None):
+def plot_tracking(image, tlwhs, obj_ids, gazes=None, ids=None, scores=None, frame_id=0, fps=0., ids2=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
@@ -77,22 +77,23 @@ def plot_tracking(image, tlwhs, obj_ids, gazes, ids, scores=None, frame_id=0, fp
         cv2.rectangle(im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
         cv2.putText(im, id_text, (intbox[0], intbox[1]), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
                     thickness=text_thickness)
-    # for i, point in enumerate(gazes):
-    #     # print(point)
-    #     start_x, start_y, x1, y1,  = point
-    #     start_x = int(start_x)
-    #     start_y = int(start_y)
-    #     x1 = int(x1 * im_w)
-    #     y1 = int(y1 * im_h)
-    #     # print(x1, y1)
-    #     obj_id = int(ids[i])
-    #     id_text = '{}'.format(int(obj_id))
-    #     color = get_color(abs(obj_id))
-    #     cv2.circle(im, (x1, y1), color=color, radius=10, thickness=-1)
-    #     cv2.line(im, (start_x, start_y), (x1, y1), color=color,  thickness=line_thickness)
+    if gazes:
+        for i, point in enumerate(gazes):
+            # print(point)
+            start_x, start_y, x1, y1,  = point
+            start_x = int(start_x)
+            start_y = int(start_y)
+            x1 = int(x1 * im_w)
+            y1 = int(y1 * im_h)
+            # print(x1, y1)
+            obj_id = int(ids[i])
+            id_text = '{}'.format(int(obj_id))
+            color = get_color(abs(obj_id))
+            cv2.circle(im, (x1, y1), color=color, radius=10, thickness=-1)
+            cv2.line(im, (start_x, start_y), (x1, y1), color=color,  thickness=line_thickness)
 
-    #     cv2.putText(im, id_text, (x1, y1), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
-    #                 thickness=text_thickness)
+            cv2.putText(im, id_text, (x1, y1), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
+                        thickness=text_thickness)
     return im
 
 

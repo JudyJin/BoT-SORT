@@ -1,5 +1,14 @@
-# BoT-SORT
+# BoT-SORT and Re-ID module IDLS23 Project
+> [**Re-identification and Joint Attention Tracking in Real Time, A Unified framework for Person Tracking**](https://www.overleaf.com/project/642224e926adc4d0f17d5a43)
+## Contributions:
 
+- Improve YOLO perforamce by finetuning 
+- Improve the tracking algorithm, changes made in  `BoT-SORT/tracker/bot-sort.py`, `BoT-SORT/tools/demo.py` and etc.
+- Improve the Re-ID feature embeddings by finetuning on new Re-ID dataset, changes made in `BoT-SORT/fast_reid/configs/REID`, `BoT-SORT/fast_reid/datasets` and etc.
+
+
+Below are oringal BoT-SORT README
+# BoT-SORT
 > [**BoT-SORT: Robust Associations Multi-Pedestrian Tracking**](https://arxiv.org/abs/2206.14651)
 > 
 > Nir Aharon, Roy Orfaig, Ben-Zion Bobrovsky

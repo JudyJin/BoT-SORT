@@ -289,12 +289,6 @@ class BoTSORT(object):
                     pickle.dump(detections[0].curr_feat, f)
                 with open('/home/zhaojin/datasets/saved_detection/..frame_feature.pkl'.replace('..', str(self.frame_id)), 'wb') as f:
                     pickle.dump(detections[0].smooth_feat, f)
-                # if self.frame_id ==50:
-                #     print(1, detections)
-
-                # if self.frame_id >=320:
-                #     print(1,detections)
-                #     print(detections[0].curr_feat)
             else:
                 detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s) for
                               (tlbr, s) in zip(dets, scores_keep)]
@@ -338,28 +332,9 @@ class BoTSORT(object):
             #         boundary_mask[:, i] = 1
 
             # ious_dists_mask = ious_dists_mask * boundary_mask
-            # if self.frame_id > 91:
-            #     print(self.frame_id)
-            #     print(emb_dists)
-            # emb_dists[emb_dists > self.appearance_thresh] = 1.0
-            # if self.frame_id > 91:
-            #     print(emb_dists)
-            #     print(ious_dists)
-            
-            # ious_dists_raw = ious_dists.copy()
+            emb_dists[emb_dists > self.appearance_thresh] = 1.0
             # emb_dists[ious_dists_mask] = 1.0
-            # ious_dists[boundary_mask] = 1.0
-            # if self.frame_id > 150:
-            #     print(self.frame_id)
-            #     for d in detections:
-            #         print(d.tlbr)
-            #     print(boundary_mask)
-            #     print(ious_dists_raw)
-            #     print(ious_dists)
-            #     print(emb_dists)
             dists = np.minimum(ious_dists, emb_dists)
-            # if self.frame_id > 91:
-            #     print(dists)
             
             # Popular ReID method (JDE / FairMOT)
             # raw_emb_dists = matching.embedding_distance(strack_pool, detections)
@@ -402,9 +377,6 @@ class BoTSORT(object):
             '''Detections'''
             detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s) for
                                  (tlbr, s) in zip(dets_second, scores_second)]
-            # if self.frame_id >=320:
-            #     print(2,detections_second)
-            #     foo
             
         else:
             detections_second = []
@@ -470,7 +442,7 @@ class BoTSORT(object):
         # for track in self.lost_stracks:
         #     if self.frame_id - track.end_frame > self.max_time_lost:
         #         track.mark_removed()
-                # removed_stracks.append(track)
+        #         removed_stracks.append(track)
 
         """ Merge """
         self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]

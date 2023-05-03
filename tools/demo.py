@@ -65,6 +65,8 @@ def make_parser():
     # test
     parser.add_argument('--head_bbox_path', default='/home/zhaojin/datasets/test/test_head_bbox.txt', type=str, help='head bbox path')
     parser.add_argument('--test_attention', default=False, help='test attention')
+    parser.add_argument('--plot_gaze', default=False, help='plot gaze')
+    parser.add_argument('--gaze_path', default='/home/zhaojin/datasets/test/gaze_demo_result.txt', help='plot attention path')
     return parser
 
 
@@ -196,6 +198,7 @@ def image_demo(predictor, vis_folder, current_time, args):
             online_im = plot_tracking(
                 img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id, fps=1. / timer.average_time
             )
+            online_im
         else:
             timer.toc()
             online_im = img_info['raw_img']
@@ -247,6 +250,10 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     frame_id = 0
     results = []
     results_head = []
+    if args.plot_gaze:
+        gaze_df = pd.read_csv(args.gaze_path, header=None)
+        gaze_df[0] = gaze_df[0].apply(lambda x: int(x.split(".")[0]))
+
     while True:
         if frame_id % 20 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
@@ -296,9 +303,27 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
                             f"{frame_id},{t[0]},{t[1]:.2f},{t[2]:.2f},{t[3]:.2f},{t[4]:.2f},-1,-1,-1,-1\n"
                         )
                     timer.toc()
-                online_im = plot_tracking(
-                    img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id + 1, fps=1. / timer.average_time
-                )
+
+                if args.plot_gaze:
+                    gaze_frame = gaze_df[gaze_df[0] == frame_id-1]
+                    # print(gaze_frame)
+                    gaze_list = gaze_frame.values.tolist()
+                    gazes = []
+                    ids = []
+                    for gaze in gaze_list:
+                        mid_x = (gaze[2] + gaze[4]/2)
+                        mid_y = (gaze[3] + gaze[5]/2)
+                        if gaze[-1] < 100:
+                            gazes.append([mid_x, mid_y, gaze[6],gaze[7]])
+                            ids.append(gaze[1]+1)        
+                    online_im = plot_tracking(
+                        img_info['raw_img'], online_tlwhs, online_ids, gazes, ids,frame_id=frame_id + 1, fps=1. / timer.average_time
+                    )
+
+                else:    
+                    online_im = plot_tracking(
+                        img_info['raw_img'], online_tlwhs, online_ids,frame_id=frame_id + 1, fps=1. / timer.average_time
+                    )
             else:
                 timer.toc()
                 online_im = img_info['raw_img']
